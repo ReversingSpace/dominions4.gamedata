@@ -114,7 +114,7 @@ func WriteFileStringN(w io.Writer, str string, N int) (err error) {
 	return
 }
 
-// readFileStringRX returns a rolling-xor string (RX);
+// ReadFileStringRX returns a rolling-xor string (RX);
 func ReadFileStringRX(r io.Reader) (str string, err error) {
 	var b byte
 	mask := byte(0x78)
@@ -163,4 +163,27 @@ func writeFileStringRXN(w io.Writer, str string, N int) (err error) {
 		return errors.New("failed to write rolling xor string with maximum length")
 	}
 	return
+}
+
+// ReadFileStringRXN returns a rolling-xor string (RX) up to N bytes
+func ReadFileStringRXN(r io.Reader, N int) (str string, err error) {
+	var b byte
+	mask := byte(0x78)
+	B := make([]byte, 0)
+	for {
+		b, err = ReadByte(r)
+		if err != nil {
+			str = string(B)
+			return
+		}
+		if b == mask {
+			str = string(B)
+			return
+		}
+		b ^= mask
+		if len(B) < N {
+			B = append(B, b)
+		}
+		mask += b
+	}
 }

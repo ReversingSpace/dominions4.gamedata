@@ -27,6 +27,7 @@ package saves
 
 import (
 	"encoding/binary"
+	"fmt"
 	"github.com/ReversingSpace/dominions4.gamedata/filepacking"
 	"io"
 )
@@ -57,10 +58,52 @@ type Fatherland struct {
 
 	// Unit information
 	Units map[int32]*Unit
+
+	// Commander information
+	Commanders map[int32]*Commander
+
+	// Dominion information
+	Dominions map[int32]*Dominion
+
+	// Spell information
+	Spells map[int32]*SpellData
+
+	// Mercenary Data
+	Mercenaries map[int32]*MercenaryData
+
+	// Mercenary related
+	mercDataUnknown []byte
+
+	// Enchantment Data
+	Enchantments map[int32]*EnchantmentData
+
+	// Scores
+	Scores []int16
+
+	// Items
+	Items []byte
+
+	// War Data
+	WarData []byte
+
+	// Heroes
+	Heroes []int16
+
+	// unknown strings
+	unkRXN []string
+
+	EndStats EndStats
+
+	EventOccurrences []int16
+
+	DelayedEvents DelayedEvents
 }
 
 // Read processes a fatherland file from the stream.
 func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
+	var index int32
+	var n int
+
 	err = f.Header.Read(r)
 	if err != nil {
 		return
@@ -81,13 +124,12 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 
 		var a int32
 		var b int32
-		var k int32
 		for {
-			k, err = filepacking.ReadInt32(r)
+			index, err = filepacking.ReadInt32(r)
 			if err != nil {
-				return newReadError("fatherland: failed to read calendar value", err)
+				return newReadError("fatherland: failed to read calendar index", err)
 			}
-			if k < 0 {
+			if index < 0 {
 				break
 			}
 			a, err = filepacking.ReadInt32(r)
@@ -98,11 +140,11 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 			if err != nil {
 				return newReadError("fatherland: failed to read calendar b value", err)
 			}
-			if k > 999 {
+			if index > 999 {
 				break
 			}
-			f.CalendarA[k] = a
-			f.CalendarB[k] = b
+			f.CalendarA[index] = a
+			f.CalendarB[index] = b
 		}
 		a, err = filepacking.ReadInt32(r)
 		if err != nil {
@@ -119,77 +161,281 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 	}
 
 	f.Lands = make(map[int32]*Land)
-	{
-		var index int32
-
-		for {
-			index, err = filepacking.ReadInt32(r)
-			if err != nil {
-				return newReadError("fatherland: failed to read land index", err)
-			}
-
-			if index < 0 {
-				break
-			}
-
-			if index > 0x5E0 {
-				return newReadError("fatherland: invalid index (exceeds 0x5e0)", err)
-			}
-
-			var land Land
-			land.TreatAsFatherland = true
-
-			err = land.Read(r)
-			if err != nil {
-				return newReadError("fatherland: land read failure", err)
-			}
-
-			f.Lands[index] = &land
+	for {
+		index, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read land index", err)
 		}
+
+		if index < 0 {
+			break
+		}
+
+		if index > 0x5E0 {
+			return newReadError("fatherland: invalid index (exceeds 0x5e0)", err)
+		}
+
+		var land Land
+		land.TreatAsFatherland = true
+
+		err = land.Read(r)
+		if err != nil {
+			return newReadError("fatherland: land read failure", err)
+		}
+
+		f.Lands[index] = &land
 	}
 
 	f.Kingdoms = make(map[int32]*Kingdom)
-	{
-		var index int32
-		for {
-			index, err = filepacking.ReadInt32(r)
-			if err != nil {
-				return newReadError("fatherland: kingdom index", err)
-			}
-			if index < 0 {
-				break
-			}
-			if index > 0xC7 {
-				return newReadError("fatherland: kingdom index exceeds 0xc7", nil)
-			}
-
-			var kingdom Kingdom
-			err = kingdom.Read(r)
-			if err != nil {
-				return err
-			}
-			f.Kingdoms[index] = &kingdom
+	for {
+		index, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: kingdom index", err)
 		}
+		if index < 0 {
+			break
+		}
+		if index > 0xC7 {
+			return newReadError("fatherland: kingdom index exceeds 0xc7", nil)
+		}
+
+		var kingdom Kingdom
+		err = kingdom.Read(r)
+		if err != nil {
+			return err
+		}
+		f.Kingdoms[index] = &kingdom
 	}
 
 	// Units.
 	f.Units = make(map[int32]*Unit)
+	for {
+		index, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: unit index", err)
+		}
+		if index < 0 {
+			break
+		}
+		u := &Unit{}
+		err = u.Read(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read unit", err)
+		}
+		f.Units[index] = u
+	}
 
-	// todo
-	// units
-	// commanders
-	// dominions
-	// spells?
-	// mercs
-	// enchantments
-	// scores
-	// items
-	// war info
-	// highest heroes
-	// fatherland passwords (?) - 200 of them?
-	// end stats
-	// events
-	// 12346 sentinel
+	f.Commanders = make(map[int32]*Commander)
+	for {
+		index, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: commander index", err)
+		}
+		if index < 0 {
+			break
+		}
+		c := &Commander{}
+		err = c.Read(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read commander", err)
+		}
+		f.Commanders[index] = c
+	}
+
+	f.Dominions = make(map[int32]*Dominion)
+	for {
+		index, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: dominion index", err)
+		}
+		if index < 0 {
+			break
+		}
+		d := &Dominion{}
+		err = d.Read(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read dominion", err)
+		}
+		f.Dominions[index] = d
+	}
+
+	f.Spells = make(map[int32]*SpellData)
+	for {
+		index, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: spelldata index", err)
+		}
+		if index < 0 {
+			break
+		}
+		d := &SpellData{}
+		err = d.Read(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read spelldata", err)
+		}
+		f.Spells[index] = d
+	}
+
+	f.Mercenaries = make(map[int32]*MercenaryData)
+	for {
+		index, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: mercenary index", err)
+		}
+		if index < 0 {
+			break
+		}
+		d := &MercenaryData{}
+		err = d.Read(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read mercenarydata", err)
+		}
+		f.Mercenaries[index] = d
+	}
+
+	// unk
+	f.mercDataUnknown = make([]byte, 100)
+	n, err = r.Read(f.mercDataUnknown)
+	if err != nil {
+		return newReadError("fatherland: failed to read merc data (unknown)", err)
+	}
+
+	if n != 100 {
+		return fmt.Errorf("fatherland: failed to read merc data (unknown)")
+	}
+
+	f.Enchantments = make(map[int32]*EnchantmentData)
+	for {
+		index, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: mercenary index", err)
+		}
+		if index < 0 {
+			break
+		}
+		d := &EnchantmentData{}
+		err = d.Read(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read mercenarydata", err)
+		}
+		f.Enchantments[index] = d
+	}
+
+	if f.Settings.HallOfFameCount > 0 {
+		f.Scores = make([]int16, f.Settings.HallOfFameCount)
+		for i := 0; i < int(f.Settings.HallOfFameCount); i++ {
+			f.Scores[i], err = filepacking.ReadInt16(r)
+			if err != nil {
+				return newReadError("fatherland: score failed to read", err)
+			}
+		}
+	}
+
+	f.Items = make([]byte, 1000)
+	n, err = r.Read(f.Items)
+	if err != nil {
+		return newReadError("fatherland: failed to read items", err)
+	}
+
+	if n != 1000 {
+		return fmt.Errorf("fatherland: failed to read items (needed 1000, not %d)", n)
+	}
+
+	f.WarData = make([]byte, 40000)
+	n, err = r.Read(f.WarData)
+	if err != nil {
+		return newReadError("fatherland: failed to read war matrix", err)
+	}
+
+	if n != 40000 {
+		return fmt.Errorf("fatherland: failed to read war matrix (needed 40000 bytes, got %d)", n)
+	}
+
+	var heroCount int32
+	heroCount, err = filepacking.ReadInt32(r)
+	if err != nil {
+		return newReadError("fatherland: failed to read hero count", err)
+	}
+
+	f.Heroes = make([]int16, heroCount+1)
+	for i := 0; i < len(f.Heroes); i++ {
+		f.Heroes[i], err = filepacking.ReadInt16(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read hero index", err)
+		}
+	}
+
+	f.unkRXN = make([]string, 200)
+	for i := 0; i < 200; i++ {
+		f.unkRXN[i], err = filepacking.ReadFileStringRXN(r, 50)
+		if err != nil {
+			return newReadError("fatherland: failed to read rxn string", err)
+		}
+	}
+
+	//
+	err = f.EndStats.Read(r)
+	if err != nil {
+		return newReadError("fatherland: failed to read end stats", err)
+	}
+
+	var unk4474 int32
+	unk4474, err = filepacking.ReadInt32(r)
+	if err != nil {
+		return newReadError("fatherland: failed to read sentinel-like value (4474)", err)
+	}
+
+	if unk4474 < 4474 {
+		return fmt.Errorf("fatherland: sentinel-like value must exceed 4474 and does not (is %d)", unk4474)
+	}
+
+	eventCount := int32(1000)
+
+	if unk4474 == 4475 {
+		eventCount, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read event count", err)
+		}
+	}
+
+	if eventCount > 4000 {
+		return fmt.Errorf("fatherland: invalid event count (%d exceeds 4000)", eventCount)
+	}
+
+	f.EventOccurrences = make([]int16, eventCount)
+	for i := 0; i < int(eventCount); i++ {
+		f.EventOccurrences[i], err = filepacking.ReadInt16(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read event occurrence", err)
+		}
+	}
+
+	// re-use 4474
+	unk4474, err = filepacking.ReadInt32(r)
+	if err != nil {
+		return newReadError("fatherland: failed to read sentinel-like value (4480)", err)
+	}
+
+	if unk4474 != 4480 {
+		pos, _ := r.Seek(0, 1)
+		println(pos - 4)
+		return fmt.Errorf("fatherland: invalid 4480 sentinel in delayed events (value is %d)", unk4474)
+	}
+
+	err = f.DelayedEvents.Read(r)
+	if err != nil {
+		return newReadError("fatherland: failed to read delayed events", err)
+	}
+
+	// 12346 sentinel; reuse unk4474
+	unk4474, err = filepacking.ReadInt32(r)
+	if err != nil {
+		return newReadError("fatherland: failed to read sentinel", err)
+	}
+
+	if unk4474 != 12346 {
+		return fmt.Errorf("fatherland: closing sentinel is not 12346 (is %d)", unk4474)
+	}
 
 	return
 }

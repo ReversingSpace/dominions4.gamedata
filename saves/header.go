@@ -133,6 +133,7 @@ func (f *FileHeader) Read(r io.ReadSeeker) (err error) {
 		return newReadError("failed to read header: realm", err)
 	}
 
+	// ?
 	f.unk02, err = filepacking.ReadInt32(r)
 	if err != nil {
 		return newReadError("failed to read header: unk02", err)

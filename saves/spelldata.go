@@ -30,59 +30,32 @@ import (
 	"io"
 )
 
-// CalendarEntry represents an entry in the "new" Dom4 calendar format.
-type CalendarEntry struct {
-	Index int32
-	Unk1  int32
-	Unk2  int32
+// A SpellData object represents spell data from the fatherland
+type SpellData struct {
+	// array of shorts; probably ID information
+	shortArray []int16
+
+	// array of shorts 2
+	shortArray2 []int16
 }
 
-// ReadCalendar reads the array of calendar entries found in the
-// Fatherland file.
-func ReadCalendar(r io.ReadSeeker) (array []CalendarEntry, err error) {
-	array = make([]CalendarEntry, 0)
-	var ce *CalendarEntry
-	for {
-		ce = &CalendarEntry{}
-
-		ce.Index, err = filepacking.ReadInt32(r)
+// Read extracts SpellData from the stream.
+func (s *SpellData) Read(r io.Reader) (err error) {
+	s.shortArray = make([]int16, 1000)
+	for i := 0; i < 1000; i++ {
+		s.shortArray[i], err = filepacking.ReadInt16(r)
 		if err != nil {
-			err = newReadError("calendar error: index failed to read", err)
-			return
+			return newReadError("spelldata: unable to read short array: bad entry", err)
 		}
-
-		// Bad value
-		if ce.Index <= -1 {
-			break
-		}
-
-		ce.Unk1, err = filepacking.ReadInt32(r)
-		if err != nil {
-			err = newReadError("calendar error: unk1 failed to read", err)
-			return
-		}
-
-		ce.Unk2, err = filepacking.ReadInt32(r)
-		if err != nil {
-			err = newReadError("calendar error: unk2 failed to read", err)
-			return
-		}
-
-		// Valid range
-		if ce.Index > 999 {
-			continue
-		}
-
-		array = append(array, *ce)
 	}
 
-	var test int32
-	test, err = filepacking.ReadInt32(r)
-	if err != nil {
-		err = newReadError("calendar error: test value not read", err)
+	s.shortArray2 = make([]int16, 24)
+	for i := 0; i < 24; i++ {
+		s.shortArray2[i], err = filepacking.ReadInt16(r)
+		if err != nil {
+			return newReadError("spelldata: unable to read short array 2: bad entry", err)
+		}
 	}
-	if test != 8283 {
-		err = newReadError("calendar error: test value invalid", nil)
-	}
+
 	return
 }
