@@ -175,6 +175,8 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 			return newReadError("land read failed: name", err)
 		}
 
+		// What comes next *should* be 18 shorts.
+
 		l.unkShort0, err = filepacking.ReadInt16(r)
 		if err != nil {
 			return newReadError("land read failed: unk short 0", err)
@@ -232,6 +234,8 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 			return newReadError("land read failed: owner field 3", err)
 		}
 
+		// 4 bytes follow this
+
 		b, err = filepacking.ReadByte(r)
 		if err != nil {
 			return newReadError("land read failed: lab 0", err)
@@ -261,6 +265,8 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 		}
 		r.Seek(40, 1)
 	}
+
+	// 16 bytes
 
 	l.Defence, err = filepacking.ReadInt8(r)
 	if err != nil {
@@ -303,11 +309,7 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 		l.Sites[i].Revealed = b == 1
 	}
 
-	/*
-		if l.Defence > 100 {
-			// bad value
-		}
-	*/
+	// todo: if Defence > 100 it's bad.
 
 	for {
 		b, err = filepacking.ReadByte(r)
@@ -339,21 +341,21 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 
 	if l.unkShortRecruit1 > 0 {
 		l.unkRecruitArray1 = make([]int16, l.unkShortRecruit1)
-	}
-	for i := int16(0); i < l.unkShortRecruit1; i++ {
-		l.unkRecruitArray1[i], err = filepacking.ReadInt16(r)
-		if err != nil {
-			return newReadError("land read error: bad byte in unk recruit array 1", err)
+		for i := int16(0); i < l.unkShortRecruit1; i++ {
+			l.unkRecruitArray1[i], err = filepacking.ReadInt16(r)
+			if err != nil {
+				return newReadError("land read error: bad byte in unk recruit array 1", err)
+			}
 		}
 	}
 
 	if l.unkShortRecruit2 > 0 {
 		l.unkRecruitArray2 = make([]int16, l.unkShortRecruit2)
-	}
-	for i := int16(0); i < l.unkShortRecruit2; i++ {
-		l.unkRecruitArray2[i], err = filepacking.ReadInt16(r)
-		if err != nil {
-			return newReadError("land read error: bad byte in unk recruit array 2", err)
+		for i := int16(0); i < l.unkShortRecruit2; i++ {
+			l.unkRecruitArray2[i], err = filepacking.ReadInt16(r)
+			if err != nil {
+				return newReadError("land read error: bad byte in unk recruit array 2", err)
+			}
 		}
 	}
 
@@ -412,7 +414,7 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 		r.Seek(4, 1)
 	}
 
-	r.Seek(2, 1)
+	r.Seek(2, 1) // two individual bytes
 
 	l.Geometry.Terrain, err = filepacking.ReadInt32(r)
 	if err != nil {
@@ -479,8 +481,13 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 	// geo (20 shorts)
 	for i := 0; i < 20; i++ {
 		l.Geometry.unkShorts1[i], err = filepacking.ReadInt16(r)
-		return newReadError("land read error: unk shorts 1", err)
+		if err != nil {
+
+			return newReadError("land read error: unk shorts 1", err)
+		}
 	}
+
+	r.Seek(2, 1) // unknown short
 
 	// Dynamic array (it could be smaller or larger than 200)
 	l.dynamicArray, err = filepacking.ReadSparse(r, 200)

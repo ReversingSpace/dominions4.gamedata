@@ -45,13 +45,8 @@ type Dominion struct {
 	u32unk00 uint32
 	u32unk01 uint32
 
-	structs []dominionUnkStruct
-}
-
-//
-type dominionUnkStruct struct {
-	key   uint32
-	value uint32
+	// probably relationship data or ownership.
+	unkMappedI32I32 map[int32]int32
 }
 
 // Read extracts Dominion information from the stream.
@@ -83,11 +78,16 @@ func (d *Dominion) Read(r io.ReadSeeker) (err error) {
 		return newReadError("unable to read dominion: u32unk01", err)
 	}
 
-	d.structs = make([]dominionUnkStruct, 0)
-	var k uint32
-	var v uint32
+	// Create only if missing
+	if d.unkMappedI32I32 == nil {
+		d.unkMappedI32I32 = make(map[int32]int32)
+	}
+
+	var k int32
+	var v int32
+	i := 0
 	for {
-		k, err = filepacking.ReadUInt32(r)
+		k, err = filepacking.ReadInt32(r)
 		if err != nil {
 			return newReadError("unable to read dominion: k-v loop: k", err)
 		}
@@ -96,19 +96,16 @@ func (d *Dominion) Read(r io.ReadSeeker) (err error) {
 			break
 		}
 
-		v, err = filepacking.ReadUInt32(r)
+		v, err = filepacking.ReadInt32(r)
 		if err != nil {
 			return newReadError("unable to read dominion: k-v loop: v", err)
 		}
 
-		d.structs = append(d.structs,
-			dominionUnkStruct{
-				key:   k,
-				value: v,
-			},
-		)
+		d.unkMappedI32I32[k] = v
 
-		if len(d.structs) == 64 {
+		i++
+
+		if i == 64 {
 			break
 		}
 	}

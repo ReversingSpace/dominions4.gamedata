@@ -39,8 +39,11 @@ type Fatherland struct {
 	// Game Info/Settings fields
 	Settings Settings
 
-	// Calendar (only supporting the modern/new type)
-	Calendar []CalendarEntry
+	// CalendarA
+	CalendarA map[int32]int32
+
+	// CalenderB
+	CalendarB map[int32]int32 // lunar?
 
 	// This is the default zoom value; it's from Dom3.
 	// Fairly sure it isn't remotely useful in Dom4.
@@ -51,6 +54,9 @@ type Fatherland struct {
 
 	// Kingdom information
 	Kingdoms map[int32]*Kingdom
+
+	// Unit information
+	Units map[int32]*Unit
 }
 
 // Read processes a fatherland file from the stream.
@@ -65,9 +71,46 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 		return
 	}
 
-	f.Calendar, err = ReadCalendar(r)
-	if err != nil {
-		return
+	{
+		if f.CalendarA == nil {
+			f.CalendarA = make(map[int32]int32)
+		}
+		if f.CalendarB == nil {
+			f.CalendarB = make(map[int32]int32)
+		}
+
+		var a int32
+		var b int32
+		var k int32
+		for {
+			k, err = filepacking.ReadInt32(r)
+			if err != nil {
+				return newReadError("fatherland: failed to read calendar value", err)
+			}
+			if k < 0 {
+				break
+			}
+			a, err = filepacking.ReadInt32(r)
+			if err != nil {
+				return newReadError("fatherland: failed to read calendar a value", err)
+			}
+			b, err = filepacking.ReadInt32(r)
+			if err != nil {
+				return newReadError("fatherland: failed to read calendar b value", err)
+			}
+			if k > 999 {
+				break
+			}
+			f.CalendarA[k] = a
+			f.CalendarB[k] = b
+		}
+		a, err = filepacking.ReadInt32(r)
+		if err != nil {
+			return newReadError("fatherland: failed to read calendar sentry value", err)
+		}
+		if a != 8283 {
+			return newReadError("fatherland: bad calendar sentry value", err)
+		}
 	}
 
 	err = binary.Read(r, binary.LittleEndian, &f.Zoom)
@@ -129,7 +172,24 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 		}
 	}
 
+	// Units.
+	f.Units = make(map[int32]*Unit)
+
 	// todo
+	// units
+	// commanders
+	// dominions
+	// spells?
+	// mercs
+	// enchantments
+	// scores
+	// items
+	// war info
+	// highest heroes
+	// fatherland passwords (?) - 200 of them?
+	// end stats
+	// events
+	// 12346 sentinel
 
 	return
 }

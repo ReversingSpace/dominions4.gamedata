@@ -48,6 +48,16 @@ type Settings struct {
 	// 0-9
 	StrengthOfIndependents byte
 
+	// #features
+	MagicSiteFrequency byte
+
+	// 1 = common
+	// 2 = Rare
+	RandomEventCommonality byte
+
+	// Number of scores in the hall of fame section
+	HallOfFameCount byte
+
 	// -1 = Easy
 	//  1 = Standard
 	//  2 = Difficult
@@ -146,6 +156,22 @@ func (s *Settings) Read(r io.ReadSeeker) (err error) {
 	s.StrengthOfIndependents, err = filepacking.ReadByte(r)
 	if err != nil {
 		return newReadError("failed to read settings: strength of independents", err)
+	}
+
+	// #features
+	s.MagicSiteFrequency, err = filepacking.ReadByte(r)
+	if err != nil {
+		return newReadError("failed to read settings: magical site frequency", err)
+	}
+
+	s.RandomEventCommonality, err = filepacking.ReadByte(r)
+	if err != nil {
+		return newReadError("failed to read settings: random event rarity/commonality", err)
+	}
+
+	s.HallOfFameCount, err = filepacking.ReadByte(r)
+	if err != nil {
+		return newReadError("failed to read settings: hall of fame count", err)
 	}
 
 	s.DifficultyOfMagicalResearch, err = filepacking.ReadByte(r)

@@ -48,19 +48,18 @@ type FileHeader struct {
 	// Can be -1
 	TurnNumber int32
 
-	// -1 for fatherland files.
-	// Might be useful in other files.
-	unk22 int32
+	// -1 for fatherland files?
+	unk00 int32
 
-	// 0 for fatherland; unknown otherwise.
-	unk26 int32
+	unk01 int32
 
-	// RealmID
-	// 0 for fatherland files.
+	// RealmID (ignore it for fatherland files)
 	RealmID int32
 
-	// Always 0 for lords and fatherlands.
-	unk34 int32
+	// depends on realm; 0 if realm is < 0
+	unk02 int32
+
+	unk03 int32
 
 	// Game Name
 	GameName string
@@ -119,14 +118,14 @@ func (f *FileHeader) Read(r io.ReadSeeker) (err error) {
 		return
 	}
 
-	f.unk22, err = filepacking.ReadInt32(r)
+	f.unk00, err = filepacking.ReadInt32(r)
 	if err != nil {
-		return newReadError("failed to read header: unk22", err)
+		return newReadError("failed to read header: unk00", err)
 	}
 
-	f.unk26, err = filepacking.ReadInt32(r)
+	f.unk01, err = filepacking.ReadInt32(r)
 	if err != nil {
-		return newReadError("failed to read header: unk26", err)
+		return newReadError("failed to read header: unk01", err)
 	}
 
 	f.RealmID, err = filepacking.ReadInt32(r)
@@ -134,9 +133,14 @@ func (f *FileHeader) Read(r io.ReadSeeker) (err error) {
 		return newReadError("failed to read header: realm", err)
 	}
 
-	f.unk34, err = filepacking.ReadInt32(r)
+	f.unk02, err = filepacking.ReadInt32(r)
 	if err != nil {
-		return newReadError("failed to read header: unk34", err)
+		return newReadError("failed to read header: unk02", err)
+	}
+
+	f.unk03, err = filepacking.ReadInt32(r)
+	if err != nil {
+		return newReadError("failed to read header: unk03", err)
 	}
 
 	f.GameName, err = filepacking.ReadFileString(r)
