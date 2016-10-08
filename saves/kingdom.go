@@ -34,8 +34,8 @@ import (
 
 // Kingdom describes the way a kingdom is stored in the fatherland.
 type Kingdom struct {
-	UnkInt32  int32
-	UnkString string
+	unkInt32   int32
+	LeaderName string
 }
 
 // Read extracts the kingdom from the stream.
@@ -52,7 +52,7 @@ func (k *Kingdom) Read(r io.ReadSeeker) (err error) {
 		return newReadError("kingdom read failed: bad sentinel value", nil)
 	}
 
-	k.UnkInt32, err = filepacking.ReadInt32(r)
+	k.unkInt32, err = filepacking.ReadInt32(r)
 	if err != nil {
 		panic("Failed to read unkint32")
 	}
@@ -72,7 +72,7 @@ func (k *Kingdom) Read(r io.ReadSeeker) (err error) {
 	r.Seek(int64(2*29), 1)
 
 	// read string
-	k.UnkString, err = filepacking.ReadFileString(r)
+	k.LeaderName, err = filepacking.ReadFileString(r)
 	if err != nil {
 		return newReadError("kingdom read failed: failed to read kingdom string", err)
 	}
