@@ -92,6 +92,9 @@ type Settings struct {
 	// Default seems to be 6 (thrones)
 	VictoryMode int16
 
+	// Required amount for the given Victory Mode
+	VictoryRequirement int16
+
 	// Money Multiplier
 	// Default value is 100;
 	// Range is 50-300
@@ -205,6 +208,11 @@ func (s *Settings) Read(r io.ReadSeeker) (err error) {
 		s.VictoryMode, err = filepacking.ReadInt16(r)
 		if err != nil {
 			return newReadError("failed to read settings: victory mode", err)
+		}
+
+		s.VictoryRequirement, err = filepacking.ReadInt16(r)
+		if err != nil {
+			return newReadError("failed to read settings: victory requirement", err)
 		}
 
 		s.MultiplierMoney, err = filepacking.ReadInt16(r)

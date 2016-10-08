@@ -73,9 +73,6 @@ type FileHeader struct {
 	// Useless for most purposes; if you don't know what
 	// it does don't worry about it.
 	TurnKey int32
-
-	// Default sentinel; verified.
-	sentinel int32
 }
 
 var fileHeaderSignature = []byte{0x01, 0x02, 0x04, 0x44, 0x4F, 0x4D}
@@ -164,12 +161,13 @@ func (f *FileHeader) Read(r io.ReadSeeker) (err error) {
 		return newReadError("failed to read header: turn key", err)
 	}
 
-	f.sentinel, err = filepacking.ReadInt32(r)
+	var sentinel int32
+	sentinel, err = filepacking.ReadInt32(r)
 	if err != nil {
 		return newReadError("failed to read header: sentinel", err)
 	}
 
-	if f.sentinel != int32(12346) {
+	if sentinel != int32(12346) {
 		return newReadError("failed to read header: bad sentinel value", nil)
 	}
 	return

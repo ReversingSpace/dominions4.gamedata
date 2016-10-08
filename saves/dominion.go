@@ -26,14 +26,13 @@
 package saves
 
 import (
+	"fmt"
 	"github.com/ReversingSpace/dominions4.gamedata/filepacking"
 	"io"
 )
 
 // A Dominion object represents Dominion related information.
 type Dominion struct {
-	// Short (sig?): 12346
-	Magic uint16
 
 	// 6 bytes
 	b08l06 []byte
@@ -51,31 +50,37 @@ type Dominion struct {
 
 // Read extracts Dominion information from the stream.
 func (d *Dominion) Read(r io.ReadSeeker) (err error) {
+	// Short (sig?): 12346
+	var Magic uint16
 
-	d.Magic, err = filepacking.ReadUInt16(r)
+	Magic, err = filepacking.ReadUInt16(r)
 	if err != nil {
-		return newReadError("unable to read dominion: magic", err)
+		return newReadError("dominion: unable to read magic", err)
+	}
+
+	if Magic != 12346 {
+		return fmt.Errorf("dominion: magic is not 12346 (is %d)", Magic)
 	}
 
 	d.b08l06 = make([]byte, 6)
 	_, err = r.Read(d.b08l06)
 	if err != nil {
-		return newReadError("unable to read dominion: initial byte array", err)
+		return newReadError("dominion: unable to read initial byte array", err)
 	}
 
 	d.Name, err = filepacking.ReadFileString(r)
 	if err != nil {
-		return newReadError("unable to read dominion: name", err)
+		return newReadError("dominion: unable to read name", err)
 	}
 
 	d.u32unk00, err = filepacking.ReadUInt32(r)
 	if err != nil {
-		return newReadError("unable to read dominion: u32unk00", err)
+		return newReadError("dominion: unable to read u32unk00", err)
 	}
 
 	d.u32unk01, err = filepacking.ReadUInt32(r)
 	if err != nil {
-		return newReadError("unable to read dominion: u32unk01", err)
+		return newReadError("dominion: unable to read u32unk01", err)
 	}
 
 	// Create only if missing
@@ -89,7 +94,7 @@ func (d *Dominion) Read(r io.ReadSeeker) (err error) {
 	for {
 		k, err = filepacking.ReadInt32(r)
 		if err != nil {
-			return newReadError("unable to read dominion: k-v loop: k", err)
+			return newReadError("dominion: unable to read k-v loop: k", err)
 		}
 
 		if k == 0 {
@@ -98,7 +103,7 @@ func (d *Dominion) Read(r io.ReadSeeker) (err error) {
 
 		v, err = filepacking.ReadInt32(r)
 		if err != nil {
-			return newReadError("unable to read dominion: k-v loop: v", err)
+			return newReadError("dominion: unable to read k-v loop: v", err)
 		}
 
 		d.unkMappedI32I32[k] = v

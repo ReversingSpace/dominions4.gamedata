@@ -32,41 +32,35 @@ import (
 
 // DelayedEvents represents delayed events.
 type DelayedEvents struct {
-	Base map[int32]int32
-	Turn map[int32]int32
+	Base []int32
+	Turn []int32
 
 	// I *assume* this is right.
-	Lunar map[int32]int32
+	Lunar []int32
 }
 
 // Read extracts DelayedEvents from the stream.
 func (e *DelayedEvents) Read(r io.Reader) (err error) {
 
-	var index int32
+	var maxIndex int32
+	maxIndex, err = filepacking.ReadInt32(r)
+	if err != nil {
+		return newReadError("delayed events: failed to read max index", err)
+	}
+
+	if maxIndex < 0 {
+		return
+	}
+
+	maxIndex++
+
 	var value int32
 
-	if e.Base == nil {
-		e.Base = make(map[int32]int32)
-	}
+	e.Base = make([]int32, maxIndex)
+	e.Turn = make([]int32, maxIndex)
+	e.Lunar = make([]int32, maxIndex)
 
-	if e.Turn == nil {
-		e.Turn = make(map[int32]int32)
-	}
-
-	if e.Lunar == nil {
-		e.Lunar = make(map[int32]int32)
-	}
-
-	for {
-		index, err = filepacking.ReadInt32(r)
-		if err != nil {
-			return newReadError("delayed events: failed to read index", err)
-		}
-
-		if index < 0 {
-			break
-		}
-
+	for index := int32(0); index < maxIndex; index++ {
 		value, err = filepacking.ReadInt32(r)
 		if err != nil {
 			return newReadError("delayed events: failed to read base event value", err)

@@ -150,8 +150,8 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 		if err != nil {
 			return newReadError("fatherland: failed to read calendar sentry value", err)
 		}
-		if a != 8283 {
-			return newReadError("fatherland: bad calendar sentry value", err)
+		if a != 0x205B {
+			return fmt.Errorf("fatherland: bad calendar sentry value (is %d, should be 8283)", a)
 		}
 	}
 
@@ -285,6 +285,10 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 		if index < 0 {
 			break
 		}
+
+		// this does something weird, but it isn't read related so
+		// we'll ignore it for now.
+
 		d := &MercenaryData{}
 		err = d.Read(r)
 		if err != nil {
@@ -373,7 +377,6 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 		}
 	}
 
-	//
 	err = f.EndStats.Read(r)
 	if err != nil {
 		return newReadError("fatherland: failed to read end stats", err)
@@ -417,8 +420,6 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 	}
 
 	if unk4474 != 4480 {
-		pos, _ := r.Seek(0, 1)
-		println(pos - 4)
 		return fmt.Errorf("fatherland: invalid 4480 sentinel in delayed events (value is %d)", unk4474)
 	}
 

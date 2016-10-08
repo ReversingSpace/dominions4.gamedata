@@ -26,6 +26,8 @@
 package saves
 
 import (
+	"fmt"
+	"github.com/ReversingSpace/dominions4.gamedata/filepacking"
 	"io"
 )
 
@@ -39,7 +41,17 @@ type EnchantmentData struct {
 
 // Read extracts EnchantmentData from the stream.
 func (e *EnchantmentData) Read(r io.ReadSeeker) (err error) {
+
+	var sentinel int16
+	sentinel, err = filepacking.ReadInt16(r)
+	if err != nil {
+		return newReadError("enchantment data: failed to get sentinel", err)
+	}
+	if sentinel != 12346 {
+		return fmt.Errorf("enchantment data: sentinel is bad (%d not 26812)", sentinel)
+	}
+
 	// todo ...
-	r.Seek(38, 1)
+	r.Seek((1*4)+(6*2)+(5*4)+(1*2), 1)
 	return
 }
