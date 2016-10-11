@@ -80,7 +80,8 @@ func (k *Kingdom) Read(r io.ReadSeeker) (err error) {
 	// read 9 bytes
 	r.Seek(int64(9), 1)
 
-	// read 81 shorts (wtf?)
+	// read 81 shorts
+	// 81 shorts leaves a lot to question (as to what they are)
 	r.Seek(int64(81*2), 1)
 
 	// read 1 short

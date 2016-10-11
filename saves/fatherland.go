@@ -195,8 +195,8 @@ func (f *Fatherland) Read(r io.ReadSeeker) (err error) {
 		if index < 0 {
 			break
 		}
-		if index > 0xC7 {
-			return newReadError("fatherland: kingdom index exceeds 0xc7", nil)
+		if index > 0xF9 {
+			return newReadError("fatherland: kingdom index exceeds 249", nil)
 		}
 
 		var kingdom Kingdom

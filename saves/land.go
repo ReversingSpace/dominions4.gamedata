@@ -95,8 +95,9 @@ type Land struct {
 
 	// Site reveal status has been moved into Sites
 
-	// LandInformation - Relationship to other lands?
-	LandInformation [0xC7][9]byte
+	// LandInformation
+	// Another way to view this: [0xF9][9]byte
+	LandInformation map[uint8][]byte
 
 	// Unknown
 	unkShort2 int16
@@ -311,6 +312,9 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 
 	// todo: if Defence > 100 it's bad.
 
+	// Allocate
+	l.LandInformation = make(map[uint8][]byte)
+
 	for {
 		b, err = filepacking.ReadByte(r)
 		if err != nil {
@@ -320,7 +324,7 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 			break
 		}
 
-		if b > 0xC7 {
+		if b > 0xF9 {
 			return newReadError("land read error: bad byte in loop; land id exceeds game maximum", nil)
 		}
 
@@ -331,6 +335,10 @@ func (l *Land) Read(r io.ReadSeeker) (err error) {
 
 		if b2 > 8 {
 			return newReadError("land read error: bad byte in loop", nil)
+		}
+
+		if _, ok := l.LandInformation[b]; !ok {
+			l.LandInformation[b] = make([]byte, 9)
 		}
 
 		l.LandInformation[b][b2], err = filepacking.ReadByte(r)
